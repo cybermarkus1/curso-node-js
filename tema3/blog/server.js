@@ -1,18 +1,21 @@
-var express = require("express"),
-    app = express();
+var express        = require('express');
+var bodyParser     = require('body-parser');
+var methodOverride = require('method-override');
+var cookieParser   = require('cookie-parser');
+var cookieSession  = require('cookie-session');
+var favicon        = require('static-favicon');
+var Jade           = require('jade');
+var app            = express();
 
-app.configure(function() {
-  app.use(express.favicon());
-  app.use(express.bodyParser());
-  app.use(express.methodOverride());
-  app.use(express.cookieParser("secreto"));
-  app.use(express.cookieSession({secret: "asdf"}));
-  app.engine("jade", require("jade").__express);
-  app.set("views", "./views");
-  app.set("view engine", "jade");
-  app.use(app.router);
-  app.use(express.static(__dirname + "/public"));
-});
+app.use(favicon());
+app.use(bodyParser());
+app.use(methodOverride());
+app.use(cookieParser("secreto"));
+app.use(cookieSession({secret: "asdf"}));
+app.engine("jade", Jade.__express);
+app.set("views", "./views");
+app.set("view engine", "jade");
+app.use(express.static(__dirname + "/public"));
 
 function extend() {
   var args = [].slice.call(arguments);
@@ -59,13 +62,52 @@ extend(Post.prototype, {
   }
 });
 
+app.get("/", function(req, res) {
+  res.render("post-list", {posts: Post.getAll()});
+});
+
+app.get("/posts", function(req, res) {
+  res.render("post-list", {posts: Post.getAll()});
+});
+
+app.get("/posts/new", function(req, res) {
+  res.render("new-post", {post: {}});
+});
+
+app.get("/posts/:id", function(req, res) {
+  var post = Post.find(req.params.id);
+  res.render("post-detail", {post: post});
+});
+
+app.get("/posts/:id/edit", function(req, res) {
+  var post = Post.find(req.params.id);
+  res.render("new-post", {post: post});
+});
+
+app.put("/posts/:id", function(req, res) {
+  var post = Post.find(req.params.id);
+  post.title = req.body.title;
+  post.content = req.body.content;
+  post.update();
+  res.render("post-detail", {post: post});
+});
+
+app.post("/posts", function(req, res) {
+  var post = new Post({title: req.body.title, content: req.body.content});
+  post.save();
+  res.render("post-detail", {post: post});
+});
+
+app.delete("/posts/:id", function(req, res) {
+  var post = Post.find(req.params.id);
+  post.delete();
+  res.redirect("/");
+});
+
+// colocar aqui el manejador de errores/middleware
+
 
 /* Tu código aquí! */
 
 
-app.listen(3000)
-
-/* Populate */
-
-var post = new Post({title: "Prueba", content: "Esto es una prueba"})
-post.save()
+app.listen(3000);
